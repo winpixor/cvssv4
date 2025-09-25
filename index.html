@@ -1291,30 +1291,80 @@
         });
 
         // Copy link button
-           document.getElementById('copy-link').addEventListener('click', () => {
-            const vector = document.getElementById('vector-display').value;
-            const shortVector = vector.replace('CVSS:4.0/', '');
-            const nistUrl = `https://nvd.nist.gov/vuln-metrics/cvss/v4-calculator?vector=${shortVector}`;
-            const htmlToCopy = `<a href="${nistUrl}">${shortVector}</a>`;
+           document.getElementById('copy-link').addEventListener('click', async () => {
+    const vector = document.getElementById('vector-display').value;
+    const shortVector = vector.replace('CVSS:4.0/', '');
+    const nistUrl = `https://nvd.nist.gov/vuln-metrics/cvss/v4-calculator?vector=${shortVector}`;
+    const htmlToCopy = `<a href="${nistUrl}">${shortVector}</a>`;
+    const plainTextToCopy = `${shortVector}\n${nistUrl}`;
+    const popup = document.getElementById('copy-popup');
+    const copyLinkText = document.getElementById('copy-link-text');
+    const copyLinkTick = document.getElementById('copy-link-tick');
 
-            // Use Clipboard API for rich text
-            if (navigator.clipboard && window.ClipboardItem) {
-                const blob = new Blob([htmlToCopy], { type: 'text/html' });
-                const clipboardItem = new ClipboardItem({ 'text/html': blob });
-                navigator.clipboard.write([clipboardItem]);
+    try {
+        // Check if Clipboard API is supported
+        if (navigator.clipboard) {
+            // Try copying as HTML if ClipboardItem is supported
+            if (window.ClipboardItem && navigator.clipboard.write) {
+                const htmlBlob = new Blob([htmlToCopy], { type: 'text/html' });
+                const textBlob = new Blob([plainTextToCopy], { type: 'text/plain' });
+                const clipboardItem = new ClipboardItem({
+                    'text/html': htmlBlob,
+                    'text/plain': textBlob
+                });
+                await navigator.clipboard.write([clipboardItem]);
             } else {
-                // Fallback: copy plain text
-                navigator.clipboard.writeText(shortVector + '\n' + nistUrl);
+                // Fallback to plain text
+                await navigator.clipboard.writeText(plainTextToCopy);
             }
 
-            // Show green tick and "Copied!" text
-            document.getElementById('copy-link-text').style.display = 'none';
-            document.getElementById('copy-link-tick').style.display = 'inline-block';
+            // Show success feedback
+            copyLinkText.style.display = 'none';
+            copyLinkTick.style.display = 'inline-block';
+            popup.textContent = 'Copied vector!';
+            popup.style.background = '#0056b3';
+            popup.style.display = 'block';
             setTimeout(() => {
-                document.getElementById('copy-link-text').style.display = 'inline';
-                document.getElementById('copy-link-tick').style.display = 'none';
+                copyLinkText.style.display = 'inline';
+                copyLinkTick.style.display = 'none';
+                popup.style.display = 'none';
             }, 2000);
-        });
+        } else {
+            // Fallback for browsers without Clipboard API
+            const tempInput = document.createElement('textarea');
+            tempInput.value = plainTextToCopy;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            try {
+                document.execCommand('copy');
+                // Show success feedback
+                copyLinkText.style.display = 'none';
+                copyLinkTick.style.display = 'inline-block';
+                popup.textContent = 'Copied vector!';
+                popup.style.background = '#0056b3';
+                popup.style.display = 'block';
+                setTimeout(() => {
+                    copyLinkText.style.display = 'inline';
+                    copyLinkTick.style.display = 'none';
+                    popup.style.display = 'none';
+                }, 2000);
+            } catch (err) {
+                throw new Error('document.execCommand failed');
+            } finally {
+                document.body.removeChild(tempInput);
+            }
+        }
+    } catch (err) {
+        // Show error feedback
+        console.error('Failed to copy:', err);
+        popup.textContent = 'Failed to copy vector!';
+        popup.style.background = '#c00000';
+        popup.style.display = 'block';
+        setTimeout(() => {
+            popup.style.display = 'none';
+        }, 2000);
+    }
+});
 
 
         // Initialize tooltips
